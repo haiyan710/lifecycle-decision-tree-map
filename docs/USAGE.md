@@ -33,7 +33,7 @@ The more you hand over up front, the fewer questions Claude asks. Attach or past
 | SOPs / work instructions | The steps and branches for each case |
 | Task or responsibility list | Every case the team handles, including recurring work |
 | Assignment table (who handles which partner, product or work type) | The person / group overlay |
-| List of bots, scripts, workflows and integrations | The automation zones |
+| List of bots, scripts, workflows and integrations, ideally the automation team's official inventory with status (live / in design) | The automation zones, plus the hidden "in design" layer |
 | Chat threads or emails where the team explains "how we really do it" | The current practice, which is often newer than the SOP |
 | System list (helpdesk, ERP, CRM, partner portals, shared mailboxes) | The system ports |
 
@@ -84,6 +84,7 @@ Claude stops asking after about three rounds. Anything still open becomes a "to 
 - **Shaded automation zone.** The stretch a bot or workflow runs, and where it hands back to a person.
 - **↪ card.** "Same step as on another branch" (the branches merge). **↺ card.** "Loops back".
 - **Dashed outline / "to confirm".** Inferred, not yet validated.
+- **Purple dashed step marked "Not live"** (only with "Show in-design" on). Automation that is still being designed, attached to the manual step it will replace. Click it for the source document, schedule, rules and current manual time. A whole card marked in design is a new concept that replaces no single step.
 - **Toolbar.** Search, filter by person, system or assignment group (non-matching steps dim), jump to a stage, expand or collapse everything.
 
 ---

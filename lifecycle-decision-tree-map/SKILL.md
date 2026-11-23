@@ -14,7 +14,7 @@ Turn **all of a team's operational work** into **one interactive HTML file**. Th
 
 **Automation** means anything the company runs instead of a person: RPA bots, scheduled scripts, workflow tools (n8n, Zapier, Power Automate), system integrations or AI agents. In labels, use the company's own word ("RPA", "bot", "automation", "workflow"). Default to "automation".
 
-The default purpose is **understanding the current state**: a newcomer reads the map and knows what the team does, where, with which tools, and what is automated. It shows what runs today, not a future design, and carries no metrics unless asked.
+The default purpose is **understanding the current state**: a newcomer reads the map and knows what the team does, where, with which tools, and what is automated. It shows what runs today and carries no metrics unless asked. Anything not yet live (automation in design, a code assigned but not running) is hidden by default and, when shown, attaches to the manual step it would replace (section 4, "In-design work"), so it never distorts the live picture.
 
 Why a horizontal decision tree: it keeps *condition → consequence* visible and places every case in time. Swimlanes and lists hide the branching. Offer swimlanes only if the user asks for them.
 
@@ -55,7 +55,7 @@ Why a horizontal decision tree: it keeps *condition → consequence* visible and
 - **Purpose and readers.** What is the map for (current state, onboarding, finding automation, redesign)? Who reads it? Who validates it?
 - **Names policy.** May real staff names appear, or roles and groups only?
 - **Unit.** What moves through the lifecycle? Where does it start, and in which system is it "closed"?
-- **Scope.** Which teams are included? How is work done by another team or office marked? Leave out anything still in design.
+- **Scope.** Which teams are included? How is work done by another team or office marked? Note anything still in design separately: it goes on the map only as hidden in-design work (section 4).
 - **Stages.** Which stages over time? Example: before sale → order & confirmation → before use → during use → after use. For each stage, ask for the happy path and the main branching question (the gate).
 - **Recurring work.** Is there work not tied to a single unit (catalogue upkeep, inventory open/close, general partner notices)? Ask whether it is:
   - *preparation done ahead*: put it in the first stage, labelled "recurring, before each unit is sold"; or
@@ -71,7 +71,13 @@ Why a horizontal decision tree: it keeps *condition → consequence* visible and
   - what it does;
   - trigger or schedule;
   - which system it runs on;
-  - where exceptions go, and what the recipient does with them.
+  - where exceptions go, and what the recipient does with them;
+  - **status**, taken from the automation team's official inventory (ask which document that is):
+    1. **live**: running in production;
+    2. **in design**: specified or coded but not live (including codes already assigned but not running);
+    3. **not in the official inventory**: mentioned by someone, unconfirmed;
+    4. **documented but unconfirmed**: in older documents, not confirmed as still running.
+  For anything in design, also ask: **which manual step would it take over?** Record the source document, version and date, trigger/schedule, main rules, where exceptions go to people, and how long the step takes by hand today.
   If the code or scope is not known, write "unknown". Never guess names.
 
 ### Round 2: cases
@@ -118,7 +124,8 @@ const DATA = {
             { id:'partner', label:'Supplier' }, { id:'other', label:'HQ team' }, { id:'auto', label:'Automation', icon:'bot' } ],
   systems: [ { id:'ERP', abbr:'ER', name:'ERP', role:'data'|'intake'|'contact'|'auto', note:'' } ],
   automations: [ { id:'BOT1', name:'Auto-confirm', kind:'rpa'|'script'|'workflow'|'integration'|'ai',
-                   does:'', schedule:'every 30 min', system:'ERP', exceptionTo:'team', confirmed:true } ],
+                   status:'live'|'design'|'unlisted'|'legacy', source:'automation repo README, 2026-11',
+                   does:'', schedule:'every 30 min', system:'ERP', exceptionTo:'team', relatedCase:'C02' } ],
   overlays: [ { id:'partner', label:'Partner', values:['A','B'], groups:['G1','G2','HQ'],
                 matrix:{ 'A': { email:'G1', question:'G2' } } } ],          // optional
   stages: [ { id:'S1', title:'1 · Order and confirmation', sub:'', startMilestone:'Customer orders',
@@ -130,7 +137,8 @@ const DATA = {
              appliesTo:{ partner:['A','B'] },                                // optional overlay scope
              steps:[ { id:'b1', type:'trigger'|'task'|'decision'|'end'|'link', actor:'team', title:'', sub:'',
                        systems:['ERP'], people:['Name or role'], detail:'', workType:'email',
-                       confirmed:true|false, to:'C14' /* link only */, appliesTo:{ partner:['A'] } } ],
+                       confirmed:true|false, to:'C14' /* link only */, appliesTo:{ partner:['A'] },
+                       planned:false /* true = in-design automation attached to a manual step */ } ],
              edges:[ { from:'b1', to:'b2', label:'Yes' } ] } ]
 };
 ```
@@ -138,7 +146,7 @@ const DATA = {
 - **Positions.** There are none in the data. Layout is fully automatic.
 - **`process`** describes how well the process is documented. Automation coverage is computed from steps whose actor is `auto`.
 - **`confirmed:false`** renders the step with a dashed outline and a "to confirm" chip.
-- **`inDesign`** cases are hidden until the user toggles "Show in-design".
+- **`inDesign`** cases and **`planned`** steps are hidden until the user toggles "Show in-design". See section 4, "In-design work", for which one to use.
 - **Cross-case links.** A `link` step jumps to another case (`to`). Edges stay inside one case.
 
 ---
@@ -189,14 +197,53 @@ Spacing:
 
 ### Automation zones
 
-- **Grouping.** Take the visible steps with actor `auto`. Group them with union-find over edges that join two such steps.
+- **Grouping.** Take the visible **live** steps with actor `auto` (never planned steps). Group them with union-find over edges that join two such steps.
 - **Shape.** For each group, draw a padded rectangle (12 px) with radius 14, a tinted fill and a dashed border (so colour is not the only cue).
 - **Label.** "[term] [code] from ‘first step’ to ‘last step’ · hands back to: ‘…’", where the first and last steps are those with no in-group incoming or outgoing edge.
 - **Overlap.** A zone must not enclose non-automation cards. If the rectangle would, split it per column.
 
+### In-design work (show / hide)
+
+The map shows only what runs today. Anything not live is **hidden by default**. When shown, it must not change the live picture: step counts, the "n/N steps automated" chip, system ports and automation zones stay exactly as they are with the toggle off.
+
+**Two kinds of in-design work**
+
+| Kind | Use when | Declare as |
+|---|---|---|
+| **Planned automation step** (the default) | The automation will take over one or more manual steps already on the map | A step with `planned:true`, actor `auto`, plus an edge from the manual step it replaces, labelled "In design" |
+| **In-design case** | A wholly new concept that replaces no specific manual step (e.g. a shared work queue) | A case with `inDesign:true`, listed in its stage like any case |
+
+Rule of thumb: if you can answer "which step does this automation replace?", use a planned step. Use an in-design case only when you cannot. Never add an in-design automation as a new case or as a new branch at a stage gate: viewers would read the extra branches as extra kinds of work.
+
+**Planned steps**
+
+- **Title.** Short, verb + object ("Confirm cancellations from partner email"). The subtitle gives scope or schedule only; do not repeat "not live", because the badge says it.
+- **Detail.** Put everything in `detail`, shown on click: source document, version and date; trigger and schedule; main rules; exceptions handed to people; current manual time.
+- **Shape.** A planned step is always a **leaf**: no edges out of it into the live flow. One manual step may carry several planned steps (alternative automations for the same step).
+
+**Rendering rules**
+
+- **Counting.** `stepN` and the automated count exclude planned steps. Keep a separate `planN`.
+- **Ports.** System ports ignore planned steps.
+- **Automation zones.** Group only live automation steps (`!planned`).
+- **Tree building.** A step's children include edges to planned steps only while "Show in-design" is on. Planned steps are never case roots. In-design cases are filtered out of their stage while the toggle is off.
+- **Toggle.** The toolbar button flips the flag, then **rebuilds the tree** (`buildTree()`) before `refresh()`, because the tree is otherwise built once at load. If a popover for a planned step is open when the toggle goes off, close it.
+- **Auto-show.** Search hits, `link` jumps and rows of the automation status table that point at in-design work switch the toggle on (and rebuild) before opening the target.
+- **Planned step style.** Purple (`--planned`, e.g. `#6d3fc4`) dashed border, very light purple fill, purple icon. A small badge "Not live" (in the map language) sits on the border: `position:absolute; top:-9px; right:12px`, so it never pushes the card text into overflow.
+- **Edge to a planned step.** Purple, `stroke-dasharray: 5 5`, purple label. It is **not** an automation → person handoff, so it gets no handoff styling.
+- **Case chip.** When the toggle is on and a case has `planN > 0`, show a purple dashed chip "+N automations in design" in its header.
+
+**Automation status table** (a sticky note in the legend area)
+
+Group every automation by the four statuses from the official inventory: live · in design · not in the official inventory · documented but unconfirmed. Each row shows code, what it does and its schedule, and jumps to the case holding the related manual step (`data-go`). Rows in the "in design" group also carry `data-plan="1"`, which turns the toggle on.
+
+- Draw only **live** automations as automation steps and zones.
+- Draw **in design** automations as planned steps.
+- For the last two groups, draw nothing. Mention them in the related case's `note`, with the question that needs confirming.
+
 ### Case card
 
-- **Header.** Code, step count, automation chip ("n/N steps automated", if any), process badge, cross-stage tag. Buttons: **i** opens a popover with goal, trigger, risk, documentation and sources; **+/−** expands or collapses the steps.
+- **Header.** Code, step count, automation chip ("n/N steps automated", if any, live steps only), "+N automations in design" chip (toggle on only), process badge, cross-stage tag. Buttons: **i** opens a popover with goal, trigger, risk, documentation and sources; **+/−** expands or collapses the steps.
 - **Body.** Title and outcome: "Next: …" or "Ends: …". A case with no defined process gets a red dashed border.
 - **System ports** (pattern borrowed from n8n's agent node):
   - Under the card, a short stub per role group, in the order Starts from · Look up / record · Contact · Automated.
@@ -229,7 +276,7 @@ Spacing:
 - **Process badges.** defined `#1f7a3d`, rough `#8a5700`, none `#b3261e`.
 - **Contrast.** Check WCAG AA in both themes.
 - **Fonts.** System stack only, with no CDN or webfont: `system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif`. This covers Vietnamese diacritics.
-- **Legend note.** Always present: actor colours and icons, process badges, automation zone, handoff arrow, "to confirm" style, reference card.
+- **Legend note.** Always present: actor colours and icons, process badges, automation zone, handoff arrow, "to confirm" style, reference card. It must also say that in-design work is hidden by default, and that when shown it appears as in-design cases or as purple dashed planned steps attached to the manual step they would replace.
 
 ### Scale and print
 
@@ -247,9 +294,11 @@ Spacing:
 - **Ids.** Unique within each case.
 - **Edges.** Every edge endpoint exists in the same case.
 - **Links.** Every `link.to` exists in `cases`.
-- **Shape.** No unreachable steps. Every decision has at least 2 labelled exits. Every leaf is an `end` or a `link`.
+- **Shape.** No unreachable steps. Every decision has at least 2 labelled exits. Every leaf is an `end`, a `link` or a planned step.
 - **References.** Every referenced system, actor, automation and overlay value is defined.
 - **Stages.** Every case appears in some stage, or is flagged as intentionally unused.
+- **Planned steps.** Each has actor `auto`, at least one incoming edge from a non-planned manual step, no outgoing edges, and a `detail` naming its source document and date.
+- **Automation statuses.** Only `live` automations appear as live automation steps. `design` ones appear only as planned steps. `unlisted` and `legacy` ones appear only in notes.
 
 ### Runtime (headless browser such as Playwright, if available)
 
@@ -257,6 +306,11 @@ Spacing:
 - **Paths.** No `NaN` in any SVG path `d`.
 - **Overflow.** After Expand all, every label satisfies `scrollHeight ≤ clientHeight` and `scrollWidth ≤ clientWidth`. Run this in both themes and with one filter active.
 - **Screenshots.** Take one of each changed case (jump to its stage, open the card) and review it yourself: branches correct, nothing overlapping, zones enclosing only automation steps, notes clear of the tree.
+- **In-design toggle.**
+  - Off (default): zero planned steps rendered, and no in-design cases.
+  - On, with the cases that hold planned steps expanded: the number of case cards rises by exactly the number of in-design cases, and the number of planned steps equals the total declared in the open cases.
+  - Off again: everything is back to the initial counts.
+  - Screenshot each planned step at about 125 % zoom and check that the badge and the text stay inside the card.
 
 **Fallback.** If no headless browser is available, run the data lint, then ask the user to open the file and check the changed cases.
 
@@ -268,6 +322,8 @@ Spacing:
 - **Overlays eating clicks.** Hint or toast overlays must have `pointer-events: none`.
 - **Long labels.** Shorten the text before enlarging cards. Put the long version in `detail`.
 - **Hidden-node math.** Zones and wires must use only visible nodes from the current layout.
+- **Toggle without rebuild.** If the tree is built once at load, flipping "Show in-design" without calling `buildTree()` again changes nothing on screen, or leaves stale planned steps behind.
+- **In-design work drawn as cases.** One case per not-yet-live automation inflates the branch count and reads as extra work types. Attach it to the manual step instead.
 
 ---
 
@@ -282,6 +338,7 @@ Spacing:
     - Yes → "Assign adjuster".
     - No → "Request missing documents" (customer) → wait → reference card "↺ back to Document check".
   - Automation zone: "Workflow OCR-01 from ‘Claim registered’ to ‘Extract fields’ · hands back to: ‘Request missing documents’".
+  - In design: an AI agent that will chase missing documents. It is a planned step "Auto-chase missing documents (daily)", attached to "Request missing documents" by an "In design" edge. It is hidden until the toggle is on.
 - **Overlay:** line of business × work type → adjuster group.
 
 ---

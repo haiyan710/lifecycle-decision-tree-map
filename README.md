@@ -20,6 +20,7 @@ The skill is domain-neutral. It was first built for a hotel customer-service tea
 - **Expandable case cards.** Each card has an info popover (goal, trigger, risk, documentation) and system ports grouped by role: starts from · look up / record · contact · automated.
 - **Automation zones** labelled "*[term] [code] from ‘step A’ to ‘step B’ · hands back to ‘…’*".
 - **Search and filters** by person, system, and any assignment axis, for example partner × work type. Steps that don't match are dimmed.
+- **"Show in-design" toggle.** Work that is not live yet (automation in design) is hidden by default. When shown, it attaches to the manual step it would replace, so live counts never change.
 - **Sticky notes on the canvas** for open questions, sources and the legend. Steps that are still uncertain are marked **"to confirm"**.
 - **Light and dark themes**, keyboard access, and print CSS.
 
@@ -105,7 +106,7 @@ See **[docs/USAGE.md](docs/USAGE.md)** for:
 
 ## Design principles
 
-- **Current state first.** The map shows what runs today. Parts still in design stay hidden unless you toggle them on.
+- **Current state first.** The map shows what runs today. Anything still in design stays hidden unless you toggle it on. Planned automation then appears as purple dashed steps attached to the manual step it will replace, never as new cases or branches.
 - **Inference is never shown as fact.** Uncertain steps are marked "to confirm", and open questions sit in each case's sticky note.
 - **Generic about automation.** The map uses your company's word for it (RPA, bot, workflow, automation) and never guesses a bot's name.
 - **No real brand logos.** Systems are shown as 2-letter badges.
